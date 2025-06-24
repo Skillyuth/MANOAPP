@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>📊 Sheet Viewer</title>
+  <title>📊Mano Conect Admin</title>
   <style>
     :root {
       --bg: #121212;
@@ -30,6 +30,24 @@
       width: 100%;
       top: 0;
       z-index: 1000;
+    }
+    .loader {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 3em;
+    }
+    .loader::after {
+      content: '';
+      width: 48px;
+      height: 48px;
+      border: 5px solid #fff3;
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
     }
     .controls {
       margin-top: 70px;
@@ -67,6 +85,15 @@
       padding-top: 0;
       margin-bottom: 70px;
     }
+    /* New All Entries header style */
+    .all-entries-header {
+      color: var(--primary);
+      font-size: 1.25em;
+      font-weight: 700;
+      margin: 1em 0 0.5em 0;
+      padding-left: 0.5em;
+      border-left: 4px solid var(--primary);
+    }
     .email-group {
       background: var(--card);
       border-radius: 12px;
@@ -80,13 +107,31 @@
       color: var(--primary);
       font-weight: bold;
       padding: 1em;
-      font-size: 1.05em;
+      font-size: 1.1em;
       border-bottom: 1px solid #333;
       cursor: pointer;
+      user-select: none;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .email-header span.count {
+      font-weight: normal;
+      font-size: 0.85em;
+      color: #888;
     }
     .entry-container {
-      display: none;
-      padding: 1em;
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.4s ease, padding 0.4s ease;
+      padding-left: 1em;
+      padding-top: 0;
+      padding-bottom: 0;
+    }
+    .entry-container.open {
+      max-height: 1000px; /* enough to show all */
+      padding-top: 1em;
+      padding-bottom: 1em;
     }
     .entry-card {
       background: var(--card);
@@ -96,6 +141,7 @@
       box-shadow: 0 2px 6px rgba(0,0,0,0.1);
       animation: slideIn 0.3s ease;
       position: relative;
+      word-break: break-word;
     }
     .entry-card p {
       margin: 0.4em 0;
@@ -116,9 +162,10 @@
       color: white;
       font-size: 0.85em;
       cursor: pointer;
+      transition: background 0.3s ease;
     }
     .entry-actions button:hover {
-      opacity: 0.85;
+      background: #5599ff;
     }
     .bottom-nav {
       position: fixed;
@@ -137,15 +184,15 @@
       color: var(--primary);
       font-size: 1em;
       cursor: pointer;
+      transition: background 0.3s ease;
+    }
+    .bottom-nav button:hover:not(.active) {
+      background: #222;
     }
     .bottom-nav button.active {
       font-weight: bold;
       border-top: 2px solid var(--primary);
-    }
-    .loader {
-      text-align: center;
-      padding: 2em;
-      color: #888;
+      background: #222;
     }
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(10px); }
@@ -158,136 +205,152 @@
   </style>
 </head>
 <body>
-<header>📊 Sheet Viewer</header>
+<header>📊Mano Conect Admin </header>
 <div class="controls">
-  <input type="text" id="searchInput" placeholder="Search email or date..." />
+  <input type="text" id="searchInput" placeholder="Search email..." />
   <input type="date" id="fromDate" />
-  <input type="date" id="toDate" />
   <button onclick="filterData()">🔍 Search</button>
   <button onclick="resetFilters()">🔄 Reset</button>
 </div>
 <div class="content">
   <div id="dataContainer">
-    <div class="loader">⏳ Loading...</div>
+    <div class="loader"></div>
   </div>
 </div>
 <div class="bottom-nav">
   <button class="active" onclick="loadData('FileShare', this)">📁 FileShare</button>
   <button onclick="loadData('Inquiry', this)">📨 Inquiry</button>
 </div>
+
 <script>
-  const scriptURL = "https://script.google.com/macros/s/AKfycbx0zj0Y2G6PPC7wmqDmuHJMYFsWbv-b_lxbOFiBll13pKLpuMzDsdh1BqqqIWnxnjZ1Kw/exec";
-  let fullData = [];
+let fullData = [];
 
-  async function loadData(sheetName, btn) {
-    document.querySelectorAll('.bottom-nav button').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    document.getElementById('dataContainer').innerHTML = '<div class="loader">⏳ Loading...</div>';
+const scriptURL = "https://script.google.com/macros/s/AKfycbx0zj0Y2G6PPC7wmqDmuHJMYFsWbv-b_lxbOFiBll13pKLpuMzDsdh1BqqqIWnxnjZ1Kw/exec";
 
-    try {
-      const res = await fetch(`${scriptURL}?sheet=${sheetName}`);
-      const data = await res.json();
-      fullData = data;
-      renderData(data);
-    } catch (err) {
-      document.getElementById('dataContainer').innerHTML = '<p>❌ Failed to load data.</p>';
-    }
-  }
+async function loadData(sheetName, btn) {
+  document.querySelectorAll('.bottom-nav button').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
 
-  function renderData(data) {
-    const dataContainer = document.getElementById('dataContainer');
-    dataContainer.innerHTML = generateGroupedHTML(data);
-  }
+  const container = document.getElementById('dataContainer');
+  container.innerHTML = '<div class="loader"></div>';
 
-  function generateGroupedHTML(data) {
-    const grouped = {};
-    data.forEach(row => {
-      const email = row.Email || 'No Email';
-      if (!grouped[email]) grouped[email] = [];
-      grouped[email].push(row);
-    });
-    let html = '';
-    for (let email in grouped) {
-      html += `<div class="email-group">
-        <div class="email-header" onclick="toggleEntries(this)">📧 ${email}</div>
-        <div class="entry-container">`;
-      grouped[email].forEach((entry, index) => {
-        html += `<div class="entry-card">`;
-        for (let key in entry) {
-          if (entry[key].startsWith?.("http")) {
-            html += `<p><strong>${key}:</strong> <a href="${entry[key]}" target="_blank">🔗 View</a></p>`;
-          } else if (key.toLowerCase().includes("phone")) {
-            html += `<p><strong>${key}:</strong> ${entry[key]} <a href="tel:${entry[key]}" style="color: #66b2ff; text-decoration: underline;">📞 Call</a></p>`;
-          } else {
-            html += `<p><strong>${key}:</strong> ${entry[key]}</p>`;
-          }
-        }
-        html += `<div class="entry-actions">
-          <button onclick="printEntry(this)">🖨️ Print</button>
-          <button onclick="shareEntry(this)">🔗 Share</button>
-        </div>
-        </div>`;
-      });
-      html += `</div></div>`;
-    }
-    return html;
-  }
-
-  function toggleEntries(headerEl) {
-    const container = headerEl.nextElementSibling;
-    container.style.display = container.style.display === 'block' ? 'none' : 'block';
-  }
-
-  function filterData() {
-    const search = document.getElementById('searchInput').value.toLowerCase();
-    const fromDate = document.getElementById('fromDate').value;
-    const toDate = document.getElementById('toDate').value;
-
-    const filtered = fullData.filter(row => {
-      const email = (row.Email || '').toLowerCase();
-      const date = row.Date || '';
-      const matchSearch = email.includes(search) || date.includes(search);
-
-      let matchDate = true;
-      if (fromDate && date < fromDate) matchDate = false;
-      if (toDate && date > toDate) matchDate = false;
-
-      return matchSearch && matchDate;
-    });
-
-    renderData(filtered);
-  }
-
-  function resetFilters() {
-    document.getElementById('searchInput').value = '';
-    document.getElementById('fromDate').value = '';
-    document.getElementById('toDate').value = '';
+  try {
+    const res = await fetch(`${scriptURL}?sheet=${sheetName}`);
+    const data = await res.json();
+    fullData = data;
     renderData(fullData);
+  } catch (err) {
+    container.innerHTML = '<p>❌ Failed to load data.</p>';
   }
+}
 
-  function printEntry(btn) {
-    const content = btn.closest('.entry-card').innerHTML;
-    const printWindow = window.open('', '', 'width=600,height=600');
-    printWindow.document.write(`
-      <html><head><title>Print Entry</title></head>
-      <body style='font-family:Segoe UI;'>${content}</body></html>`);
-    printWindow.document.close();
-    printWindow.print();
+function renderData(data) {
+  const container = document.getElementById('dataContainer');
+  if (!data.length) {
+    container.innerHTML = '<p>No data found.</p>';
+    return;
   }
+  // Add "All Entries" header here
+  container.innerHTML = '<div class="all-entries-header">All Entries</div>' + generateGroupedHTML(data);
+}
 
-  function shareEntry(btn) {
-    const text = btn.closest('.entry-card').innerText;
-    if (navigator.share) {
-      navigator.share({
-        title: 'Shared Entry',
-        text: text
-      }).catch(console.error);
-    } else {
-      alert('Sharing not supported on this browser.');
-    }
+function generateGroupedHTML(data) {
+  const grouped = {};
+  data.forEach(row => {
+    const email = row.Email || "No Email";
+    if (!grouped[email]) grouped[email] = [];
+    grouped[email].push(row);
+  });
+
+  let html = '';
+  for (let email in grouped) {
+    const count = grouped[email].length;
+    html += `<div class="email-group">
+      <div class="email-header" onclick="toggleEntries(this)">
+        <span>📧 ${email}</span>
+        <span class="count">(${count} entr${count > 1 ? 'ies' : 'y'})</span>
+      </div>
+      <div class="entry-container">`;
+
+    grouped[email].forEach(entry => {
+      html += `<div class="entry-card">`;
+      for (let key in entry) {
+        const val = entry[key];
+        if (val && val.startsWith && val.startsWith("http")) {
+          html += `<p><strong>${key}:</strong> <a href="${val}" target="_blank" rel="noopener">🔗 View</a></p>`;
+        } else if (key.toLowerCase().includes("phone")) {
+          html += `<p><strong>${key}:</strong> ${val} <a href="tel:${val}" style="color: #66b2ff; text-decoration: underline;">📞 Call</a></p>`;
+        } else {
+          html += `<p><strong>${key}:</strong> ${val}</p>`;
+        }
+      }
+      html += `<div class="entry-actions">
+        <button onclick="printEntry(this)">🖨️ Print</button>
+        <button onclick="shareEntry(this)">🔗 Share</button>
+      </div></div>`;
+    });
+
+    html += `</div></div>`;
   }
+  return html;
+}
 
-  window.onload = () => loadData('FileShare', document.querySelector('.bottom-nav button'));
+function toggleEntries(headerEl) {
+  const container = headerEl.nextElementSibling;
+  const isOpen = container.classList.contains('open');
+  if (isOpen) {
+    container.classList.remove('open');
+  } else {
+    container.classList.add('open');
+  }
+}
+
+function filterData() {
+  const emailSearch = document.getElementById('searchInput').value.trim().toLowerCase();
+  const dateSearch = document.getElementById('fromDate').value;
+
+  const filtered = fullData.filter(row => {
+    const email = (row.Email || "").toLowerCase();
+    const date = row.Date || "";
+
+    const emailMatch = emailSearch ? email.includes(emailSearch) : true;
+    const dateMatch = dateSearch ? date === dateSearch : true;
+
+    return emailMatch && dateMatch;
+  });
+
+  renderData(filtered);
+}
+
+function resetFilters() {
+  document.getElementById('searchInput').value = "";
+  document.getElementById('fromDate').value = "";
+  renderData(fullData);
+}
+
+function printEntry(btn) {
+  const content = btn.closest('.entry-card').innerHTML;
+  const printWindow = window.open('', '', 'width=600,height=600');
+  printWindow.document.write(`
+    <html><head><title>Print Entry</title></head>
+    <body style='font-family:Segoe UI;'>${content}</body></html>`);
+  printWindow.document.close();
+  printWindow.print();
+}
+
+function shareEntry(btn) {
+  const text = btn.closest('.entry-card').innerText;
+  if (navigator.share) {
+    navigator.share({
+      title: 'Shared Entry',
+      text: text
+    }).catch(console.error);
+  } else {
+    alert('Sharing not supported on this browser.');
+  }
+}
+
+window.onload = () => loadData('FileShare', document.querySelector('.bottom-nav button'));
 </script>
 </body>
 </html>
