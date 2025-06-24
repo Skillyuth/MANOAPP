@@ -62,12 +62,6 @@
     .controls button:hover {
       opacity: 0.9;
     }
-    .section-title {
-      font-size: 1.2em;
-      margin: 1.5em 0 0.5em;
-      padding-left: 1em;
-      color: var(--primary);
-    }
     .content {
       padding: 1em;
       padding-top: 0;
@@ -76,7 +70,7 @@
     .email-group {
       background: var(--card);
       border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
       margin-bottom: 1em;
       overflow: hidden;
       animation: fadeIn 0.4s ease;
@@ -99,7 +93,7 @@
       margin-bottom: 1em;
       padding: 1em;
       border-radius: 10px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
       animation: slideIn 0.3s ease;
       position: relative;
     }
@@ -110,17 +104,21 @@
     .entry-card strong {
       color: var(--primary);
     }
-    .print-btn {
-      position: absolute;
-      top: 10px;
-      right: 10px;
+    .entry-actions {
+      margin-top: 0.8em;
+    }
+    .entry-actions button {
+      margin-right: 10px;
+      padding: 6px 10px;
+      border: none;
+      border-radius: 5px;
       background: var(--primary);
       color: white;
-      border: none;
-      padding: 4px 8px;
-      border-radius: 4px;
+      font-size: 0.85em;
       cursor: pointer;
-      font-size: 0.8em;
+    }
+    .entry-actions button:hover {
+      opacity: 0.85;
     }
     .bottom-nav {
       position: fixed;
@@ -169,9 +167,6 @@
   <button onclick="resetFilters()">🔄 Reset</button>
 </div>
 <div class="content">
-  <div class="section-title">📅 Today Entries</div>
-  <div id="todayContainer"></div>
-  <div class="section-title">📥 Recent Entries</div>
   <div id="dataContainer">
     <div class="loader">⏳ Loading...</div>
   </div>
@@ -188,7 +183,6 @@
     document.querySelectorAll('.bottom-nav button').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
     document.getElementById('dataContainer').innerHTML = '<div class="loader">⏳ Loading...</div>';
-    document.getElementById('todayContainer').innerHTML = '';
 
     try {
       const res = await fetch(`${scriptURL}?sheet=${sheetName}`);
@@ -201,15 +195,8 @@
   }
 
   function renderData(data) {
-    const todayContainer = document.getElementById('todayContainer');
     const dataContainer = document.getElementById('dataContainer');
-    const today = new Date().toISOString().split('T')[0];
-
-    const todayData = data.filter(row => row.Date === today);
-    const recentData = data.filter(row => row.Date !== today);
-
-    todayContainer.innerHTML = generateGroupedHTML(todayData);
-    dataContainer.innerHTML = generateGroupedHTML(recentData);
+    dataContainer.innerHTML = generateGroupedHTML(data);
   }
 
   function generateGroupedHTML(data) {
@@ -225,16 +212,21 @@
         <div class="email-header" onclick="toggleEntries(this)">📧 ${email}</div>
         <div class="entry-container">`;
       grouped[email].forEach((entry, index) => {
-        html += `<div class="entry-card">
-          <button class='print-btn' onclick="printEntry(this)">🖨️ Print</button>`;
+        html += `<div class="entry-card">`;
         for (let key in entry) {
           if (entry[key].startsWith?.("http")) {
             html += `<p><strong>${key}:</strong> <a href="${entry[key]}" target="_blank">🔗 View</a></p>`;
+          } else if (key.toLowerCase().includes("phone")) {
+            html += `<p><strong>${key}:</strong> ${entry[key]} <a href="tel:${entry[key]}" style="color: #66b2ff; text-decoration: underline;">📞 Call</a></p>`;
           } else {
             html += `<p><strong>${key}:</strong> ${entry[key]}</p>`;
           }
         }
-        html += `</div>`;
+        html += `<div class="entry-actions">
+          <button onclick="printEntry(this)">🖨️ Print</button>
+          <button onclick="shareEntry(this)">🔗 Share</button>
+        </div>
+        </div>`;
       });
       html += `</div></div>`;
     }
@@ -274,13 +266,25 @@
   }
 
   function printEntry(btn) {
-    const content = btn.parentElement.innerHTML;
+    const content = btn.closest('.entry-card').innerHTML;
     const printWindow = window.open('', '', 'width=600,height=600');
     printWindow.document.write(`
       <html><head><title>Print Entry</title></head>
       <body style='font-family:Segoe UI;'>${content}</body></html>`);
     printWindow.document.close();
     printWindow.print();
+  }
+
+  function shareEntry(btn) {
+    const text = btn.closest('.entry-card').innerText;
+    if (navigator.share) {
+      navigator.share({
+        title: 'Shared Entry',
+        text: text
+      }).catch(console.error);
+    } else {
+      alert('Sharing not supported on this browser.');
+    }
   }
 
   window.onload = () => loadData('FileShare', document.querySelector('.bottom-nav button'));
