@@ -2,187 +2,288 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Sheet Viewer</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>📊 Sheet Viewer</title>
   <style>
-    * {
-      box-sizing: border-box;
+    :root {
+      --bg: #121212;
+      --card: #1f1f1f;
+      --text: #f1f1f1;
+      --primary: #66b2ff;
+      --header-bg: #1e1e1e;
+      --header-text: #fff;
     }
+    * { box-sizing: border-box; transition: all 0.3s ease; }
     body {
-      font-family: 'Segoe UI', sans-serif;
       margin: 0;
-      padding: 0;
-      background: linear-gradient(to bottom right, #e0f7fa, #ffffff);
-      color: #333;
+      font-family: 'Segoe UI', sans-serif;
+      background: var(--bg);
+      color: var(--text);
     }
     header {
-      background-color: #007bff;
-      color: white;
+      background: var(--header-bg);
+      color: var(--header-text);
       padding: 1em;
+      font-size: 1.3em;
       text-align: center;
-      font-size: 1.5em;
+      position: fixed;
+      width: 100%;
+      top: 0;
+      z-index: 1000;
     }
-    .tabs {
-      display: flex;
-      justify-content: center;
-      background-color: #f1f1f1;
-      padding: 0.5em;
-      flex-wrap: wrap;
+    .controls {
+      margin-top: 70px;
+      padding: 1em;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 0.75em;
+      background: #1a1a1a;
+      border-bottom: 1px solid #333;
     }
-    .tabs button {
-      background: none;
+    .controls input[type="text"],
+    .controls input[type="date"] {
+      padding: 0.7em;
       border: none;
-      padding: 0.8em 1.2em;
+      border-radius: 8px;
+      background: #2a2a2a;
+      color: var(--text);
+      font-size: 1em;
+    }
+    .controls button {
+      padding: 0.7em;
+      border: none;
+      border-radius: 8px;
+      background: var(--primary);
+      color: #fff;
+      font-weight: bold;
       font-size: 1em;
       cursor: pointer;
-      color: #007bff;
-      border-bottom: 2px solid transparent;
-      transition: all 0.3s ease;
     }
-    .tabs button.active {
-      border-bottom: 2px solid #007bff;
-      font-weight: bold;
-      color: #0056b3;
+    .controls button:hover {
+      opacity: 0.9;
+    }
+    .section-title {
+      font-size: 1.2em;
+      margin: 1.5em 0 0.5em;
+      padding-left: 1em;
+      color: var(--primary);
     }
     .content {
       padding: 1em;
-      max-width: 900px;
-      margin: auto;
+      padding-top: 0;
+      margin-bottom: 70px;
     }
-    .card {
-      background: #ffffffcc;
-      margin: 1em 0;
+    .email-group {
+      background: var(--card);
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      margin-bottom: 1em;
+      overflow: hidden;
+      animation: fadeIn 0.4s ease;
+    }
+    .email-header {
+      background: #2a2a2a;
+      color: var(--primary);
+      font-weight: bold;
+      padding: 1em;
+      font-size: 1.05em;
+      border-bottom: 1px solid #333;
+      cursor: pointer;
+    }
+    .entry-container {
+      display: none;
+      padding: 1em;
+    }
+    .entry-card {
+      background: var(--card);
+      margin-bottom: 1em;
       padding: 1em;
       border-radius: 10px;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-      transition: transform 0.2s ease;
-      animation: fadeIn 0.6s ease;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+      animation: slideIn 0.3s ease;
       position: relative;
     }
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
+    .entry-card p {
+      margin: 0.4em 0;
+      font-size: 0.95em;
     }
-    .card:hover {
-      transform: scale(1.02);
+    .entry-card strong {
+      color: var(--primary);
     }
-    .card h4 {
-      margin: 0 0 0.5em 0;
-      color: #007bff;
-    }
-    .card p {
-      margin: 0.3em 0;
-      line-height: 1.5em;
-    }
-    .card a.button {
-      display: inline-block;
-      margin-top: 0.5em;
-      margin-right: 0.5em;
-      padding: 6px 12px;
-      background: #28a745;
+    .print-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: var(--primary);
       color: white;
-      text-decoration: none;
+      border: none;
+      padding: 4px 8px;
       border-radius: 4px;
-      transition: background 0.2s ease;
+      cursor: pointer;
+      font-size: 0.8em;
     }
-    .card a.button:hover {
-      background: #218838;
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+      background: var(--card);
+      display: flex;
+      border-top: 1px solid #333;
+      z-index: 999;
     }
-    .card a.call {
-      background: #17a2b8;
+    .bottom-nav button {
+      flex: 1;
+      padding: 1em;
+      background: none;
+      border: none;
+      color: var(--primary);
+      font-size: 1em;
+      cursor: pointer;
     }
-    .card a.call:hover {
-      background: #138496;
-    }
-    .card a.email {
-      background: #ffc107;
-      color: #212529;
-    }
-    .card a.email:hover {
-      background: #e0a800;
-    }
-    footer {
-      text-align: center;
-      padding: 1.5em 0;
-      background: #222;
-      color: #aaa;
-      font-size: 14px;
+    .bottom-nav button.active {
+      font-weight: bold;
+      border-top: 2px solid var(--primary);
     }
     .loader {
       text-align: center;
       padding: 2em;
-      font-size: 1.2em;
-      color: #555;
-      animation: pulse 1.5s infinite;
+      color: #888;
     }
-    @keyframes pulse {
-      0% { opacity: 0.6; }
-      50% { opacity: 1; }
-      100% { opacity: 0.6; }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes slideIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
     }
   </style>
 </head>
 <body>
-
-<header>
-  📊 Sheet Viewer Dashboard
-</header>
-
-<div class="tabs">
-  <button onclick="loadData('FileShare', this)" class="active">📁 FileShare</button>
+<header>📊 Sheet Viewer</header>
+<div class="controls">
+  <input type="text" id="searchInput" placeholder="Search email or date..." />
+  <input type="date" id="fromDate" />
+  <input type="date" id="toDate" />
+  <button onclick="filterData()">🔍 Search</button>
+  <button onclick="resetFilters()">🔄 Reset</button>
+</div>
+<div class="content">
+  <div class="section-title">📅 Today Entries</div>
+  <div id="todayContainer"></div>
+  <div class="section-title">📥 Recent Entries</div>
+  <div id="dataContainer">
+    <div class="loader">⏳ Loading...</div>
+  </div>
+</div>
+<div class="bottom-nav">
+  <button class="active" onclick="loadData('FileShare', this)">📁 FileShare</button>
   <button onclick="loadData('Inquiry', this)">📨 Inquiry</button>
 </div>
-
-<div class="content" id="dataContainer">
-  <div class="loader">⏳ Loading...</div>
-</div>
-
-<footer>
-  © 2025 Manohar Kumar Ray • Powered by Google Sheets 📄
-</footer>
-
 <script>
   const scriptURL = "https://script.google.com/macros/s/AKfycbx0zj0Y2G6PPC7wmqDmuHJMYFsWbv-b_lxbOFiBll13pKLpuMzDsdh1BqqqIWnxnjZ1Kw/exec";
+  let fullData = [];
 
   async function loadData(sheetName, btn) {
-    document.querySelectorAll('.tabs button').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.bottom-nav button').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    const container = document.getElementById('dataContainer');
-    container.innerHTML = '<div class="loader">⏳ Loading...</div>';
+    document.getElementById('dataContainer').innerHTML = '<div class="loader">⏳ Loading...</div>';
+    document.getElementById('todayContainer').innerHTML = '';
 
     try {
       const res = await fetch(`${scriptURL}?sheet=${sheetName}`);
       const data = await res.json();
-
-      if (!data.length) {
-        container.innerHTML = '<p>No data found.</p>';
-        return;
-      }
-
-      container.innerHTML = data.map(row => {
-        let html = '<div class="card">';
-        for (let key in row) {
-          if (row[key].startsWith && row[key].startsWith('http')) {
-            html += `<p><a class="button" href="${row[key]}" target="_blank">View</a></p>`;
-          } else if (key.toLowerCase().includes("phone")) {
-            html += `<p><strong>${key}:</strong> ${row[key]} <a class='button call' href='tel:${row[key]}'>📞 Call</a></p>`;
-          } else if (key.toLowerCase().includes("email")) {
-            html += `<p><strong>${key}:</strong> ${row[key]} <a class='button email' href='mailto:${row[key]}'>📧 Email</a></p>`;
-          } else {
-            html += `<p><strong>${key}:</strong> ${row[key]}</p>`;
-          }
-        }
-        html += '</div>';
-        return html;
-      }).join('');
-
+      fullData = data;
+      renderData(data);
     } catch (err) {
-      container.innerHTML = '<p>❌ Failed to load data.</p>';
+      document.getElementById('dataContainer').innerHTML = '<p>❌ Failed to load data.</p>';
     }
   }
 
-  window.onload = () => loadData('FileShare', document.querySelector('.tabs button'));
-</script>
+  function renderData(data) {
+    const todayContainer = document.getElementById('todayContainer');
+    const dataContainer = document.getElementById('dataContainer');
+    const today = new Date().toISOString().split('T')[0];
 
+    const todayData = data.filter(row => row.Date === today);
+    const recentData = data.filter(row => row.Date !== today);
+
+    todayContainer.innerHTML = generateGroupedHTML(todayData);
+    dataContainer.innerHTML = generateGroupedHTML(recentData);
+  }
+
+  function generateGroupedHTML(data) {
+    const grouped = {};
+    data.forEach(row => {
+      const email = row.Email || 'No Email';
+      if (!grouped[email]) grouped[email] = [];
+      grouped[email].push(row);
+    });
+    let html = '';
+    for (let email in grouped) {
+      html += `<div class="email-group">
+        <div class="email-header" onclick="toggleEntries(this)">📧 ${email}</div>
+        <div class="entry-container">`;
+      grouped[email].forEach((entry, index) => {
+        html += `<div class="entry-card">
+          <button class='print-btn' onclick="printEntry(this)">🖨️ Print</button>`;
+        for (let key in entry) {
+          if (entry[key].startsWith?.("http")) {
+            html += `<p><strong>${key}:</strong> <a href="${entry[key]}" target="_blank">🔗 View</a></p>`;
+          } else {
+            html += `<p><strong>${key}:</strong> ${entry[key]}</p>`;
+          }
+        }
+        html += `</div>`;
+      });
+      html += `</div></div>`;
+    }
+    return html;
+  }
+
+  function toggleEntries(headerEl) {
+    const container = headerEl.nextElementSibling;
+    container.style.display = container.style.display === 'block' ? 'none' : 'block';
+  }
+
+  function filterData() {
+    const search = document.getElementById('searchInput').value.toLowerCase();
+    const fromDate = document.getElementById('fromDate').value;
+    const toDate = document.getElementById('toDate').value;
+
+    const filtered = fullData.filter(row => {
+      const email = (row.Email || '').toLowerCase();
+      const date = row.Date || '';
+      const matchSearch = email.includes(search) || date.includes(search);
+
+      let matchDate = true;
+      if (fromDate && date < fromDate) matchDate = false;
+      if (toDate && date > toDate) matchDate = false;
+
+      return matchSearch && matchDate;
+    });
+
+    renderData(filtered);
+  }
+
+  function resetFilters() {
+    document.getElementById('searchInput').value = '';
+    document.getElementById('fromDate').value = '';
+    document.getElementById('toDate').value = '';
+    renderData(fullData);
+  }
+
+  function printEntry(btn) {
+    const content = btn.parentElement.innerHTML;
+    const printWindow = window.open('', '', 'width=600,height=600');
+    printWindow.document.write(`
+      <html><head><title>Print Entry</title></head>
+      <body style='font-family:Segoe UI;'>${content}</body></html>`);
+    printWindow.document.close();
+    printWindow.print();
+  }
+
+  window.onload = () => loadData('FileShare', document.querySelector('.bottom-nav button'));
+</script>
 </body>
 </html>
